@@ -2,47 +2,64 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
+const secp = require("ethereum-cryptography/secp256k1");
+const { keccak256 } = require("ethereum-cryptography/keccak");
+const { toHex } = require("ethereum-cryptography/utils");
+
 
 app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "025315327a7a12fc03d6635aea3b0b6f65c89e8bc8ec611d0a4199eb55cfe78d55": 100, // ben 
-  "02e1bcf381e2b1a2e361e5ed768395c93cf26cdd2238766b19b54b1cafdd02c5b8": 50,  // tom
-  "02878e5963c2f5c4723f11b502c19c78f5cfa7c0da274f2380e99166650de31ab0": 75,  // jan 
+  "0x759eaf454fe26d54c0bc5cb61c62cccb7b8c2aa4": 100,
+  "0x01f8f91fe525c2bff1b0d29d1bd09b1c8ffba615": 50,
+  "0xf02ca7739e8d37935381e08f6b2973738fa910ec": 75,
 };
 
-/*
-privateKeys: 
-ben = 71c2d4e3afe5384ade33410cd9d9ed1ee2c69da2809159c2b68c9985261fa9fb
-tom = 01520faa5a5420812d87b4576c6b6de620a8a7d0fa3e3d0e917259da5ee57f81
-jan = 1c2a0141549e30ac576aa6ca8c0b05874682ea624d1fada0f2fda3d9eebbaf25 
-*/
-
-
+//Because of this app is not connecting to a wallet, create an object with public key/private key pairs.
+const privateKeys = {
+  "0x759eaf454fe26d54c0bc5cb61c62cccb7b8c2aa4": "0694a228f93426d956fd20b3f307ac49bb9bd582fb864b7b1658ff929263947b",
+  "0x01f8f91fe525c2bff1b0d29d1bd09b1c8ffba615": "9107b5cd3f8f428ca1438e8d204c7930c86e891a7d8dbdec984f52ae98d13def",
+  "0xf02ca7739e8d37935381e08f6b2973738fa910ec": "1f97cf0e57b0387b86592f21a29fedd487c566994e5bcf499a9ba369c9fde8dd"
+}
 
 app.get("/balance/:address", (req, res) => {
   const { address } = req.params;
   const balance = balances[address] || 0;
-  res.send({ balance });
+  const privateKey = privateKeys[address];
+  res.send({ balance, privateKey });
 });
 
-app.post("/send", (req, res) => {
-  // TODO: get a signature from tje client-side application
-  // recover the public address from the signature
+app.post("/send", async (req, res) => {
 
-  const { sender, recipient, amount } = req.body;
+  try {
+
+  const { signature, hexMessage, recoveryBit, sender, recipient, amount } = req.body;
+
+  // get signature, hash and recovery bit from client-sideand recover the address from signature
+
+  const recoveredPublicKey = secp.recoverPublicKey(hexMessage, signature, recoveryBit);
+  const signatureAddressNotHex = keccak256(recoveredPublicKey).slice(-20);
+  const signatureAddress = "0x" + toHex(signatureAddressNotHex);
+  
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
 
   if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
-  } else {
+  } 
+  else if (signatureAddress !== sender) {
+    res.status(400).send({message: "You are not the person!"})
+  }
+  else {
     balances[sender] -= amount;
     balances[recipient] += amount;
     res.send({ balance: balances[sender] });
   }
+} catch(error){
+  console.log(error);
+}
 });
 
 app.listen(port, () => {

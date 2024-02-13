@@ -1,14 +1,11 @@
-const { randomBytes } = require('crypto')
-const secp2 = require("ethereum-cryptography/secp256k1-compat")
-const {toHex} = require("ethereum-cryptography/utils")
+const secp = require("ethereum-cryptography/secp256k1");
+const { keccak256 } = require("ethereum-cryptography/keccak");
+const { toHex } = require("ethereum-cryptography/utils");
 
-// Generate private key
-let privateKey
-do {
-privateKey = randomBytes(32)
-}while (!secp2.privateKeyVerify(privateKey))
-console.log("Private key:", toHex(privateKey))
+const privateKey = secp.utils.randomPrivateKey();
+const publicKey = secp.getPublicKey(privateKey);
+const address = keccak256(publicKey).slice(-20);
 
-// Derive public key in a compressed format
-let publicKey = secp2.publicKeyCreate(privateKey)
-console.log("Public key:", toHex(publicKey))
+console.log("private key: ", toHex(privateKey));
+console.log("public key: ", toHex(publicKey));
+console.log(`address: 0x${toHex(address)}`);

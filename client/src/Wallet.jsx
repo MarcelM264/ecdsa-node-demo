@@ -1,18 +1,29 @@
 import server from "./server";
-import { secp256k1 } from "ethereum-cryptography/secp256k1.js";
-import { toHex } from "ethereum-cryptography/utils.js";
+import * as secp from "ethereum-cryptography/secp256k1";
+import { keccak256 } from "ethereum-cryptography/keccak";
+import { utf8ToBytes } from "ethereum-cryptography/utils";
+import { toHex } from "ethereum-cryptography/utils";
 
 function Wallet({ address, setAddress, balance, setBalance, privateKey, setPrivateKey }) {
   async function onChange(evt) {
-    const privateKey = evt.target.value;
-    setPrivateKey(privateKey);
-    const address = toHex(secp256k1.getPublicKey(privateKey));
+    const address = evt.target.value;
+
+    /** if you want to use private key as wallet address you can use with code below.
+  
+      const privateKey = evt.target.value;
+      const publicKey = secp.getPublicKey(privateKey);
+      const addressNotHex = keccak256(publicKey.slice(1)).slice(-20);
+      const address = "0x" + toHex(addressNotHex);
+      setPrivateKey(privateKey);
+    */
+
     setAddress(address);
     if (address) {
       const {
-        data: { balance },
+        data: { balance, privateKey },
       } = await server.get(`balance/${address}`);
       setBalance(balance);
+      setPrivateKey(privateKey);
     } else {
       setBalance(0);
     }
@@ -23,13 +34,9 @@ function Wallet({ address, setAddress, balance, setBalance, privateKey, setPriva
       <h1>Your Wallet</h1>
 
       <label>
-        Private Key
-        <input placeholder="Type in a private key" value={privateKey} onChange={onChange}></input>
+        Wallet address
+        <input placeholder="Type your address" value={address} onChange={onChange}></input>
       </label>
-
-      <div>
-        Address: {address.slice(1, 10)}...
-      </div>
 
       <div className="balance">Balance: {balance}</div>
     </div>

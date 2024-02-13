@@ -50,17 +50,20 @@ input {
 }
 
 .button {
-  background-color: #319795;
-  border-radius: 0.125rem;
+  width: auto;
+  margin-bottom: 10px;
+  background-color: #4d75c6;
+  border-radius: 5px;
   padding: 10px 20px;
   color: white;
-  display: inline-flex;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 400;
   font-size: .9em;
+  border: 0;
   &:hover {
     cursor: pointer;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -80,7 +83,3 @@ input {
   }
 }
 
-.transfer {
-  display: flex;
-  flex-direction: column;
-}
